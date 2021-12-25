@@ -111,7 +111,12 @@ void DXProceduralProject::CreateConstantBuffers()
 //		structured buffers are for structs that have dynamic data (e.g lights in a scene, or AABBs in this case)
 void DXProceduralProject::CreateAABBPrimitiveAttributesBuffers()
 {
+	auto device = m_deviceResources->GetD3DDevice();
+	auto frameCount = m_deviceResources->GetBackBufferCount();
+	// ref: https://github.com/BobMowzie/Project5-DirectX-Procedural-Raytracing/blob/master/src/D3D12RaytracingProceduralGeometry/DXR-DynamicBuffers.cpp
+	auto instanceCount = IntersectionShaderType::TotalPrimitiveCount;
 
+	m_aabbPrimitiveAttributeBuffer.Create(device, instanceCount, frameCount, L"Scene Constant Buffer");
 }
 
 // LOOKAT-2.1: Update camera matrices stored in m_sceneCB.
@@ -157,13 +162,15 @@ void DXProceduralProject::UpdateAABBPrimitiveAttributes(float animationTime)
 			0.5f * (XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&m_aabbs[primitiveIndex].MinX))
 				+ XMLoadFloat3(reinterpret_cast<XMFLOAT3*>(&m_aabbs[primitiveIndex].MaxX))); // i.e middle of AABB.
 		XMMATRIX mTranslation = XMMatrixTranslationFromVector(vTranslation);
-
 		// TODO-2.1: Fill in this lambda function.
 		// It should create a transform matrix that is equal to scale * rotation * translation.
 		// This matrix would transform the AABB from local space to bottom level AS space.
 		// You can infer what the bottom level AS space to local space transform should be.
 		// The intersection shader tests in this project work with local space, but the geometries are provided in bottom level 
 		// AS space. So this data will be used to convert back and forth from these spaces.
+		XMMATRIX localToAS = mScale * mRotation * mTranslation;
+		m_aabbPrimitiveAttributeBuffer[primitiveIndex].localSpaceToBottomLevelAS = localToAS;
+		m_aabbPrimitiveAttributeBuffer[primitiveIndex].bottomLevelASToLocalSpace = DirectX::XMMatrixInverse(nullptr, localToAS);
 	};
 
 	UINT offset = 0;
