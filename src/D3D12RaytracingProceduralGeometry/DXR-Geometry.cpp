@@ -86,7 +86,15 @@ void DXProceduralProject::BuildProceduralGeometryAABBs()
 		// This should take into account the basePosition and the stride defined above.
 		auto InitializeAABB = [&](auto& offsetIndex, auto& size)
 		{
-			D3D12_RAYTRACING_AABB aabb{};
+			// https://github.com/microsoft/DirectX-Graphics-Samples/blob/7bf2e124a1fa81695fb82764fe3537e74c5fc956/Samples/Desktop/D3D12Raytracing/src/D3D12RaytracingProceduralGeometry/D3D12RaytracingProceduralGeometry.cpp#L589
+			D3D12_RAYTRACING_AABB aabb{
+				basePosition.x + offsetIndex.x * stride.x,
+				basePosition.y + offsetIndex.y * stride.y,
+				basePosition.z + offsetIndex.z * stride.z,
+				basePosition.x + offsetIndex.x * stride.x + size.x,
+				basePosition.y + offsetIndex.y * stride.y + size.y,
+				basePosition.z + offsetIndex.z * stride.z + size.z,
+			};
 			return aabb;
 		};
 		m_aabbs.resize(IntersectionShaderType::TotalPrimitiveCount);
@@ -110,12 +118,24 @@ void DXProceduralProject::BuildProceduralGeometryAABBs()
 		// TODO-2.5: Allocate an upload buffer for this AABB data.
 		// The base data lives in m_aabbs.data() (the stuff you filled in!), but the allocationg should be pointed
 		// towards m_aabbBuffer.resource (the actual D3D12 resource that will hold all of our AABB data as a contiguous buffer).
-	
+		// Signed distance primitives.
+		/*{
+			using namespace SignedDistancePrimitive;
+			m_aabbs[offset + MiniSpheres] = InitializeAABB(XMINT3(2, 0, 0), XMFLOAT3(2, 2, 2));
+			m_aabbs[offset + TwistedTorus] = InitializeAABB(XMINT3(0, 0, 1), XMFLOAT3(2, 2, 2));
+			m_aabbs[offset + IntersectedRoundCube] = InitializeAABB(XMINT3(0, 0, 2), XMFLOAT3(2, 2, 2));
+			m_aabbs[offset + SquareTorus] = InitializeAABB(XMFLOAT3(0.75f, -0.1f, 2.25f), XMFLOAT3(3, 3, 3));
+			m_aabbs[offset + Cog] = InitializeAABB(XMINT3(1, 0, 0), XMFLOAT3(2, 2, 2));
+			m_aabbs[offset + Cylinder] = InitializeAABB(XMINT3(0, 0, 3), XMFLOAT3(2, 3, 2));
+			m_aabbs[offset + FractalPyramid] = InitializeAABB(XMINT3(2, 0, 2), XMFLOAT3(6, 6, 6));
+		}*/
+		AllocateUploadBuffer(device, m_aabbs.data(), m_aabbs.size() * sizeof(m_aabbs[0]), &m_aabbBuffer.resource);
 	}
 }
 
 // TODO-2.5: Build geometry used in the project. As easy as calling both functions above :)
 void DXProceduralProject::BuildGeometry()
 {
-
+	DXProceduralProject::BuildProceduralGeometryAABBs();
+	DXProceduralProject::BuildPlaneGeometry();
 }
