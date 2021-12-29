@@ -42,7 +42,7 @@ void DXProceduralProject::CreateHitGroupSubobjects(CD3D12_STATE_OBJECT_DESC* ray
 				hitGroup->SetIntersectionShaderImport(c_intersectionShaderNames[intersectionType]);
 
 				// We tell the hitgroup that it should export into the correct shader hit group name, with the correct type
-				hitGroup->SetHitGroupExport(c_hitGroupNames_TriangleGeometry[rayType]);
+				hitGroup->SetHitGroupExport(c_hitGroupNames_AABBGeometry[intersectionType][rayType]);
 				hitGroup->SetHitGroupType(D3D12_HIT_GROUP_TYPE_PROCEDURAL_PRIMITIVE);
 			}
 			
@@ -76,7 +76,7 @@ void DXProceduralProject::CreateLocalRootSignatureSubobjects(CD3D12_STATE_OBJECT
 		auto localRootSignature = raytracingPipeline->CreateSubobject<CD3D12_LOCAL_ROOT_SIGNATURE_SUBOBJECT>();
 
 		// This is the AABB local root signature you already filled in before.
-		localRootSignature->SetRootSignature(m_raytracingLocalRootSignature[LocalRootSignature::Type::Triangle].Get());
+		localRootSignature->SetRootSignature(m_raytracingLocalRootSignature[LocalRootSignature::Type::AABB].Get());
 
 		// Shader association
 		auto rootSignatureAssociation = raytracingPipeline->CreateSubobject<CD3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT>();
