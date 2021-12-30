@@ -10,7 +10,6 @@ using namespace DX;
 // as well as the acceleration structure you made - and actually tells the GPU to do the raytracing!
 void DXProceduralProject::DoRaytracing()
 {
-	// ref: https://github.com/BobMowzie/Project5-DirectX-Procedural-Raytracing/blob/master/src/D3D12RaytracingProceduralGeometry/DXR-Pipeline.cpp
 	auto commandList = m_deviceResources->GetCommandList();
 	auto frameIndex = m_deviceResources->GetCurrentFrameIndex();
 
@@ -24,7 +23,11 @@ void DXProceduralProject::DoRaytracing()
 
 	// TODO-2.8: do a very similar operation for the m_aabbPrimitiveAttributeBuffer
 	m_aabbPrimitiveAttributeBuffer.CopyStagingToGpu(frameIndex);
-	commandList->SetComputeRootConstantBufferView(GlobalRootSignature::Slot::SceneConstant, m_aabbPrimitiveAttributeBuffer.GpuVirtualAddress(frameIndex));
+	// set to wrong and spent hours on this, damn directX
+	commandList->SetComputeRootShaderResourceView(
+		GlobalRootSignature::Slot::AABBattributeBuffer, 
+		m_aabbPrimitiveAttributeBuffer.GpuVirtualAddress(frameIndex)
+	);
 
 	// Bind the descriptor heaps.
 	if (m_raytracingAPI == RaytracingAPI::FallbackLayer)
@@ -51,27 +54,23 @@ void DXProceduralProject::DoRaytracing()
 	// This should be done by telling the commandList to SetComputeRoot*(). You just have to figure out what * is.
 	// Example: in the case of GlobalRootSignature::Slot::SceneConstant above, we used SetComputeRootConstantBufferView()
 	// Hint: look at CreateRootSignatures() in DXR-Pipeline.cpp.
-	if (m_raytracingAPI == RaytracingAPI::FallbackLayer)
-	{
-		/*m_fallbackCommandList->SetComputeRootDescriptorTable(GlobalRootSignature::Slot::VertexBuffers, m_indexBuffer.gpuDescriptorHandle);*/
-		// not support
-	}
-	else // DirectX Raytracing
-	{
-		commandList->SetComputeRootDescriptorTable(GlobalRootSignature::Slot::VertexBuffers, m_indexBuffer.gpuDescriptorHandle);
-	}
 
+	// We do indicies because verticies are just one register over? So we get register 1 + register 2
+	// In CreateRootSignatures() we bound the data to m_raytracingGlobalRootSignature. That buffer
+	// has the rootSignature for each index/vertex
+	commandList->SetComputeRootSignature(m_raytracingGlobalRootSignature.Get());
 
 	// TODO-2.8: Bind the OutputView (basically m_raytracingOutputResourceUAVGpuDescriptor). Very similar to the Index/Vertex buffer.
-	if (m_raytracingAPI == RaytracingAPI::FallbackLayer)
-	{
-		//m_fallbackCommandList->SetComputeRootDescriptorTable(GlobalRootSignature::Slot::OutputView, m_raytracingOutputResourceUAVGpuDescriptor);
-		// not support
-	}
-	else // DirectX Raytracing
-	{
-		commandList->SetComputeRootDescriptorTable(GlobalRootSignature::Slot::OutputView, m_raytracingOutputResourceUAVGpuDescriptor);
-	}
+	m_raytracingOutputResourceUAVGpuDescriptor; // Its a descriptor handle, so probably root descriptor table?
+	commandList->SetComputeRootDescriptorTable(
+		GlobalRootSignature::Slot::OutputView,
+		m_raytracingOutputResourceUAVGpuDescriptor);
+
+	// Copy down the vertex buffers. Duh. I forgot this line and 
+	// spent hours trying to find out what was wrong
+	commandList->SetComputeRootDescriptorTable(
+		GlobalRootSignature::Slot::VertexBuffers, 
+		m_indexBuffer.gpuDescriptorHandle);
 
 	// This will define a `DispatchRays` function that takes in a command list, a pipeline state, and a descriptor
 	// This will set the hooks using the shader tables built before and call DispatchRays on the command list
@@ -101,6 +100,7 @@ void DXProceduralProject::DoRaytracing()
 
 
 		// We do this for you. This will define how many threads will be dispatched. Basically like a blockDims in CUDA!
+		// 2d!
 		dispatchDesc->Width = m_width;
 		dispatchDesc->Height = m_height;
 		dispatchDesc->Depth = 1;
