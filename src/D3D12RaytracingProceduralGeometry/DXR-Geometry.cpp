@@ -129,13 +129,13 @@ void DXProceduralProject::BuildProceduralGeometryAABBs()
 			m_aabbs[offset + Cylinder] = InitializeAABB(XMINT3(0, 0, 3), XMFLOAT3(2, 3, 2));
 			m_aabbs[offset + FractalPyramid] = InitializeAABB(XMINT3(2, 0, 2), XMFLOAT3(6, 6, 6));
 		}*/
-		AllocateUploadBuffer(device, m_aabbs.data(), m_aabbs.size() * sizeof(m_aabbs[0]), &m_aabbBuffer.resource);
+		AllocateUploadBuffer(device, m_aabbs.data(), m_aabbs.size() * sizeof(D3D12_RAYTRACING_AABB), &m_aabbBuffer.resource);
 	}
 }
 
 // TODO-2.5: Build geometry used in the project. As easy as calling both functions above :)
 void DXProceduralProject::BuildGeometry()
 {
-	DXProceduralProject::BuildProceduralGeometryAABBs();
 	DXProceduralProject::BuildPlaneGeometry();
+	DXProceduralProject::BuildProceduralGeometryAABBs();
 }

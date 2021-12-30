@@ -364,6 +364,7 @@ void DXProceduralProject::BuildAccelerationStructures()
 	// TODO-2.6: For each bottom-level object (triangle, procedural), build a bottom-level AS.
 	// Hint: you filled in a function that does this.
 	AccelerationStructureBuffers bottomLevelAS[BottomLevelASType::Count];
+	auto buildFlag = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 	for (UINT i = 0; i < BottomLevelASType::Count; i++) {
 		bottomLevelAS[i] = BuildBottomLevelAS(geometryDescs[i]);
 	}

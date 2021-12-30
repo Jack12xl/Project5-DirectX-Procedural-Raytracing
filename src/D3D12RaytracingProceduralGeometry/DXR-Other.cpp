@@ -183,14 +183,15 @@ void DXProceduralProject::SelectRaytracingAPI(RaytracingAPI type)
     }
     else // DirectX Raytracing
     {
-        if (m_isDxrSupported)
+        /*if (m_isDxrSupported)
         {
             m_raytracingAPI = type;
         }
         else
         {
             OutputDebugString(L"Invalid selection - DXR is not available.\n");
-        }
+        }*/
+        m_raytracingAPI = type;
     }
 }
 
