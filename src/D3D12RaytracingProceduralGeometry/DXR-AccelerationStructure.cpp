@@ -366,7 +366,7 @@ void DXProceduralProject::BuildAccelerationStructures()
 	AccelerationStructureBuffers bottomLevelAS[BottomLevelASType::Count];
 	auto buildFlag = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
 	for (UINT i = 0; i < BottomLevelASType::Count; i++) {
-		bottomLevelAS[i] = BuildBottomLevelAS(geometryDescs[i]);
+		bottomLevelAS[i] = BuildBottomLevelAS(geometryDescs[i], D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE);
 	}
 
 	// Batch all resource barriers for bottom-level AS builds.
@@ -379,7 +379,8 @@ void DXProceduralProject::BuildAccelerationStructures()
 	commandList->ResourceBarrier(BottomLevelASType::Count, resourceBarriers);
 
 	// TODO-2.6: Build top-level AS. Hint, you already made a function that does this.
-	AccelerationStructureBuffers topLevelAS = BuildTopLevelAS(bottomLevelAS);
+	buildFlag = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_NONE;
+	AccelerationStructureBuffers topLevelAS = BuildTopLevelAS(bottomLevelAS, buildFlag);
 
 	// Kick off acceleration structure construction.
 	m_deviceResources->ExecuteCommandList();
