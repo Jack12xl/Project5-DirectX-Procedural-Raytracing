@@ -158,7 +158,31 @@ float4 TraceRadianceRay(in Ray ray, in UINT currentRayRecursionDepth)
 // Hint 2: remember what the ShadowRay payload looks like. See RaytracingHlslCompat.h
 bool TraceShadowRayAndReportIfHit(in Ray ray, in UINT currentRayRecursionDepth)
 {
-	return false;
+    if (currentRayRecursionDepth >= MAX_RAY_RECURSION_DEPTH)
+    {
+        return false;
+    }
+
+    // Set the ray's extents.
+    RayDesc rayDesc;
+    rayDesc.Origin = ray.origin;
+    rayDesc.Direction = ray.direction;
+    // Set TMin to a zero value to avoid aliasing artifacts along contact areas.
+    // Note: make sure to enable face culling so as to avoid surface face fighting.
+    rayDesc.TMin = 0;
+    rayDesc.TMax = 10000;
+
+    ShadowRayPayload shadowRayPayload = { true };
+
+    TraceRay(g_scene,
+        RAY_FLAG_CULL_BACK_FACING_TRIANGLES | RAY_FLAG_FORCE_OPAQUE | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER,
+        TraceRayParameters::InstanceMask,
+        TraceRayParameters::HitGroup::Offset[RayType::Shadow],
+        TraceRayParameters::HitGroup::GeometryStride,
+        TraceRayParameters::MissShader::Offset[RayType::Shadow],
+        rayDesc, shadowRayPayload);
+
+    return shadowRayPayload.hit;
 }
 
 //***************************************************************************
@@ -203,8 +227,8 @@ void MyClosestHitShader_Triangle(inout RayPayload rayPayload, in BuiltInTriangle
     // Retrieve corresponding vertex normals for the triangle vertices.
     float3 triangleNormal = g_vertices[indices[0]].normal;
 
-	// This is the intersection point on the triangle.
-	float3 hitPosition = HitWorldPosition();
+	    // This is the intersection point on the triangle.
+	    float3 hitPosition = HitWorldPosition();
 
     // Trace a ray from the hit position towards the single light source we have. If on our way to the light we hit something, then we have a shadow!
     Ray shadowRay = { hitPosition, normalize(g_sceneCB.lightPosition.xyz - hitPosition) };
@@ -233,6 +257,9 @@ void MyClosestHitShader_Triangle(inout RayPayload rayPayload, in BuiltInTriangle
 	// Hint 1: look at the intrinsic function RayTCurrent() that returns how "far away" your ray is.
 	// Hint 2: use the built-in function lerp() to linearly interpolate between the computed color and the Background color.
 	//		   When t is big, we want the background color to be more pronounced.
+    float t = RayTCurrent();
+    float lerp_coeff = exp(-0.0001 * t * t * t);
+    color = lerp(BackgroundColor, color, lerp_coeff);
 
     rayPayload.color = color;
 }
@@ -251,7 +278,7 @@ void MyClosestHitShader_Triangle(inout RayPayload rayPayload, in BuiltInTriangle
 [shader("closesthit")]
 void MyClosestHitShader_AABB(inout RayPayload rayPayload, in ProceduralPrimitiveAttributes attr)
 {
-
+    
 }
 
 //***************************************************************************
