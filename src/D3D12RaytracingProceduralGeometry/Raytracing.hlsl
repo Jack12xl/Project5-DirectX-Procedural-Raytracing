@@ -41,7 +41,9 @@ ConstantBuffer<PrimitiveInstanceConstantBuffer> l_aabbCB: register(b2); // other
 // Remember to clamp the dot product term!
 float CalculateDiffuseCoefficient(in float3 incidentLightRay, in float3 normal)
 {
-	return 0.0f;
+    float coefficient = dot(normalize(-incidentLightRay), normalize(normal));
+    coefficient = clamp(coefficient, 0, 1);
+    return coefficient;
 }
 
 // TODO-3.6: Phong lighting specular component.
@@ -51,7 +53,10 @@ float CalculateDiffuseCoefficient(in float3 incidentLightRay, in float3 normal)
 // Remember to normalize the reflected ray, and to clamp the dot product term 
 float4 CalculateSpecularCoefficient(in float3 incidentLightRay, in float3 normal, in float specularPower)
 {
-	return float4(0.0f, 0.0f, 0.0f, 0.0f);
+	float3 reflectedLightRay = normalize(reflect(incidentLightRay, normal));
+    float coefficient = pow(dot(reflectedLightRay, normalize(-WorldRayDirection())), specularPower);
+    coefficient = clamp(coefficient, 0, 1);
+	return coefficient;
 }
 
 // TODO-3.6: Phong lighting model = ambient + diffuse + specular components.
@@ -75,8 +80,26 @@ float4 CalculatePhongLighting(in float4 albedo, in float3 normal, in bool isInSh
 	float4 ambientColorMax = g_sceneCB.lightAmbientColor;
 	float a = 1 - saturate(dot(normal, float3(0, -1, 0)));
 	ambientColor = albedo * lerp(ambientColorMin, ambientColorMax, a);
+                    
+    float3 lightDirection = normalize(HitWorldPosition() - g_sceneCB.lightPosition);
+    // Diffuse component
+    float4 lightDiffuseColor = g_sceneCB.lightDiffuseColor;
+    float Kd = CalculateDiffuseCoefficient(lightDirection, normal);
+    float4 diffuseColor = (isInShadow ? InShadowRadiance : 1.0) * diffuseCoef * Kd * lightDiffuseColor * albedo;
+                
+    // Specular component
+    float4 specularColor;
+    if (!isInShadow)
+    {
+        float4 lightSpecularColor = float4(1, 1, 1, 1);
+        float4 Ks = CalculateSpecularCoefficient(lightDirection, normal, specularPower);
+        specularColor = specularCoef * Ks * lightSpecularColor;
+    }
+    else {
+        specularColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
+    }
 
-	return ambientColor;
+	return ambientColor + diffuseColor + specularColor;
 }
 
 //***************************************************************************
