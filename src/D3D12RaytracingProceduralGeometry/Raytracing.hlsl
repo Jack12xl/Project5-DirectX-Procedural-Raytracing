@@ -278,7 +278,35 @@ void MyClosestHitShader_Triangle(inout RayPayload rayPayload, in BuiltInTriangle
 [shader("closesthit")]
 void MyClosestHitShader_AABB(inout RayPayload rayPayload, in ProceduralPrimitiveAttributes attr)
 {
-    
+    float3 hitPosition = HitWorldPosition();
+    float3 surfaceNormal = attr.normal;
+
+    // (1) Trace a shadow ray.
+    Ray shadowRay = { hitPosition, normalize(g_sceneCB.lightPosition.xyz - hitPosition) };
+    bool shadowRayHit = TraceShadowRayAndReportIfHit(shadowRay, rayPayload.recursionDepth);
+
+    // (2) Trace a reflectance ray.
+    float4 reflectedColor = float4(0, 0, 0, 0);
+    if (l_materialCB.reflectanceCoef > 0.001)
+    {
+        Ray reflectionRay = { hitPosition, reflect(WorldRayDirection(), surfaceNormal) };
+        float4 reflectionColor = TraceRadianceRay(reflectionRay, rayPayload.recursionDepth);
+
+        float3 fresnelR = FresnelReflectanceSchlick(WorldRayDirection(), surfaceNormal, l_materialCB.albedo.xyz);
+        reflectedColor = l_materialCB.reflectanceCoef * float4(fresnelR, 1) * reflectionColor;
+    }
+
+    // (3) (4) Calculate final color.
+    float4 phongColor = CalculatePhongLighting(l_materialCB.albedo, surfaceNormal, shadowRayHit, l_materialCB.diffuseCoef, l_materialCB.specularCoef, l_materialCB.specularPower);
+    float4 color = (phongColor + reflectedColor);
+
+    // (5) TODO: apply visibility falloff.
+    float t = RayTCurrent();
+    float lerp_coeff = exp(-0.0001 * t * t * t);
+    color = lerp(BackgroundColor, color, lerp_coeff);
+
+    // (6) Fill the payload color.
+    rayPayload.color = color;
 }
 
 //***************************************************************************
