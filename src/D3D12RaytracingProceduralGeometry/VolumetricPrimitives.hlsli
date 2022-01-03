@@ -75,7 +75,7 @@ void InitializeAnimatedMetaballs(out Metaball blobs[N_METABALLS], in float elaps
     };
 
     // Metaball field radii of max influence
-    float radii[N_METABALLS] = { 0.45, 0.55, 0.45 };
+    float radii[N_METABALLS] = { 0.9, 0.9, 0.5 };
 
     // Calculate animated metaball center positions.
 	float tAnimate = CalculateAnimationInterpolant(elapsedTime, cycleDuration);

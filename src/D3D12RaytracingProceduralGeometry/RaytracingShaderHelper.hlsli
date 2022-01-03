@@ -130,19 +130,19 @@ float3 HitAttribute(float3 vertexAttribute[3], float2 barycentrics)
 inline Ray GenerateCameraRay(uint2 index, in float3 cameraPosition, in float4x4 projectionToWorld)
 {
     // https://github.com/microsoft/DirectX-Graphics-Samples/blob/e5ea2ac7430ce39e6f6d619fd85ae32581931589/Samples/Desktop/D3D12Raytracing/src/D3D12RaytracingProceduralGeometry/RaytracingShaderHelper.hlsli#L105
-	float2 xy = index + 0.5f; // center in the middle of the pixel.
-	float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
+    float2 xy = index + 0.5f; // center in the middle of the pixel.
+    float2 screenPos = xy / DispatchRaysDimensions().xy * 2.0 - 1.0;
 
     // Invert Y for DirectX-style coordinates.
-	screenPos.y = -screenPos.y;
+    screenPos.y = -screenPos.y;
 
     // Unproject the pixel coordinate into a world positon.
-	float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
-	world.xyz /= world.w;
+    float4 world = mul(float4(screenPos, 0, 1), projectionToWorld);
+    world.xyz /= world.w;
                     
-	Ray ray;
+    Ray ray;
     ray.origin = cameraPosition;
-	ray.direction = normalize(world);
+    ray.direction = normalize(world.xyz - ray.origin);;
                     
     return ray;
 }

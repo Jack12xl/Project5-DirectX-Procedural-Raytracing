@@ -81,7 +81,7 @@ float4 CalculatePhongLighting(in float4 albedo, in float3 normal, in bool isInSh
 	float a = 1 - saturate(dot(normal, float3(0, -1, 0)));
 	ambientColor = albedo * lerp(ambientColorMin, ambientColorMax, a);
                     
-    float3 lightDirection = normalize(HitWorldPosition() - g_sceneCB.lightPosition);
+    float3 lightDirection = normalize(HitWorldPosition() - g_sceneCB.lightPosition.xyz);
     // Diffuse component
     float4 lightDiffuseColor = g_sceneCB.lightDiffuseColor;
     float Kd = CalculateDiffuseCoefficient(lightDirection, normal);
@@ -196,7 +196,7 @@ bool TraceShadowRayAndReportIfHit(in Ray ray, in UINT currentRayRecursionDepth)
 [shader("raygeneration")]
 void MyRaygenShader()
 {
-    Ray r = GenerateCameraRay(DispatchRaysIndex().xy, g_sceneCB.cameraPosition, g_sceneCB.projectionToWorld);
+    Ray r = GenerateCameraRay(DispatchRaysIndex().xy, g_sceneCB.cameraPosition.xyz, g_sceneCB.projectionToWorld);
     float4 color = TraceRadianceRay(r, 0);
 	// Write the color to the render target
     g_renderTarget[DispatchRaysIndex().xy] = color;
